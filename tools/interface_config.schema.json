@@ -43,10 +43,6 @@
             "title": "PlayCover配置",
             "type": "object",
             "properties": {
-                "address": {
-                    "title": "服务地址",
-                    "type": "string"
-                },
                 "uuid": {
                     "title": "Bundle Identifier",
                     "type": "string"

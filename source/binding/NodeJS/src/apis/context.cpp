@@ -187,6 +187,24 @@ maajs::ValueType ContextImpl::get_tasker()
     return TaskerImpl::locate_object(env, MaaContextGetTasker(context));
 }
 
+std::optional<std::string> ContextImpl::get_current_controller_name()
+{
+    StringBuffer buffer;
+    if (!MaaContextGetCurrentControllerName(context, buffer)) {
+        return std::nullopt;
+    }
+    return buffer.str();
+}
+
+std::optional<maajs::ValueType> ContextImpl::get_current_controller()
+{
+    auto ctrl = MaaContextGetCurrentController(context);
+    if (!ctrl) {
+        return std::nullopt;
+    }
+    return ControllerImpl::locate_object(env, ctrl);
+}
+
 maajs::ValueType ContextImpl::clone()
 {
     return locate_object(env, MaaContextClone(context));
@@ -265,6 +283,8 @@ void ContextImpl::init_proto(maajs::ObjectType proto, maajs::FunctionType)
     MAA_BIND_FUNC(proto, "get_node_data_parsed", ContextImpl::get_node_data_parsed);
     MAA_BIND_GETTER(proto, "task_id", ContextImpl::get_task_id);
     MAA_BIND_GETTER(proto, "tasker", ContextImpl::get_tasker);
+    MAA_BIND_GETTER(proto, "current_controller_name", ContextImpl::get_current_controller_name);
+    MAA_BIND_GETTER(proto, "current_controller", ContextImpl::get_current_controller);
     MAA_BIND_FUNC(proto, "clone", ContextImpl::clone);
     MAA_BIND_FUNC(proto, "set_anchor", ContextImpl::set_anchor);
     MAA_BIND_FUNC(proto, "get_anchor", ContextImpl::get_anchor);

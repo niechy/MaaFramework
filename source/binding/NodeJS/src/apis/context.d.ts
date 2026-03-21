@@ -43,6 +43,8 @@ declare global {
             get_node_data_parsed(node_name: string): DumpTask | null
             get task_id(): TaskId
             get tasker(): Tasker
+            get current_controller_name(): string | null
+            get current_controller(): Controller | null
             clone(): Context
             set_anchor(anchor_name: string, node_name: string): void
             get_anchor(anchor_name: string): string | null

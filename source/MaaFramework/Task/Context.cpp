@@ -40,6 +40,8 @@ std::shared_ptr<Context> Context::make_clone() const
 Context::Context(MaaTaskId id, Tasker* tasker, PrivateArg)
     : task_id_(id)
     , tasker_(tasker)
+    , current_node_name_()
+    , default_controller_name_(tasker ? tasker->default_controller_name() : std::string())
     , task_state_(std::make_shared<TaskState>())
     , need_to_stop_(std::make_shared<bool>())
 {
@@ -52,6 +54,8 @@ Context::Context(const Context& other)
     , tasker_(other.tasker_)
     , pipeline_override_(other.pipeline_override_)
     , image_override_(other.image_override_)
+    , current_node_name_(other.current_node_name_)
+    , default_controller_name_(other.default_controller_name_)
     , task_state_(other.task_state_)
     , need_to_stop_(other.need_to_stop_)
 // don't copy clone_holder_
@@ -283,6 +287,16 @@ Tasker* Context::tasker() const
     return tasker_;
 }
 
+std::string Context::current_controller_name() const
+{
+    return resolve_controller_name(current_node_name_);
+}
+
+MaaController* Context::current_controller() const
+{
+    return controller_for_current_node();
+}
+
 size_t Context::get_hit_count(const std::string& node_name) const
 {
     auto it = task_state_->hit_count.find(node_name);
@@ -388,6 +402,64 @@ std::vector<cv::Mat> Context::get_images(const std::vector<std::string>& names)
     return results;
 }
 
+std::string Context::resolve_controller_name(const std::string& node_name) const
+{
+    if (!node_name.empty()) {
+        auto node_opt = get_pipeline_data(node_name);
+        if (node_opt && !node_opt->controller.empty()) {
+            return node_opt->controller;
+        }
+    }
+
+    if (!default_controller_name_.empty()) {
+        return default_controller_name_;
+    }
+
+    if (!tasker_) {
+        return {};
+    }
+
+    return tasker_->default_controller_name();
+}
+
+MAA_CTRL_NS::ControllerAgent* Context::resolve_controller(const std::string& node_name) const
+{
+    if (!tasker_) {
+        return nullptr;
+    }
+
+    auto name = resolve_controller_name(node_name);
+    if (name.empty()) {
+        return tasker_->controller();
+    }
+    return tasker_->controller(name);
+}
+
+MAA_CTRL_NS::ControllerAgent* Context::controller_for_current_node() const
+{
+    return resolve_controller(current_node_name_);
+}
+
+void Context::set_current_node_name(std::string name)
+{
+    current_node_name_ = std::move(name);
+}
+
+const std::string& Context::current_node_name() const
+{
+    return current_node_name_;
+}
+
+void Context::set_default_controller_name(std::string name)
+{
+    default_controller_name_ = std::move(name);
+}
+
+const std::string& Context::default_controller_name() const
+{
+    return default_controller_name_;
+}
+
 bool& Context::need_to_stop()
 {
     return *need_to_stop_;
@@ -442,6 +514,14 @@ bool Context::check_pipeline() const
     auto raw = resource->pipeline_res().get_pipeline_data_map();
     auto all = pipeline_override_;
     all.merge(raw);
+
+    for (const auto& [name, data] : all) {
+        std::ignore = name;
+        if (!data.controller.empty() && !tasker_->controller(data.controller)) {
+            LogError << "controller not found in tasker" << VAR(data.controller);
+            return false;
+        }
+    }
 
     return MAA_RES_NS::PipelineChecker::check_all_validity(all);
 }

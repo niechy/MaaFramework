@@ -363,6 +363,7 @@ struct JWaitFreezes
 
 struct JPipelineData
 {
+    std::string controller;
     JRecognition recognition;
     JAction action;
     std::vector<NodeAttr> next;
@@ -384,6 +385,7 @@ struct JPipelineData
     json::object attach;
 
     MEO_TOJSON(
+        controller,
         recognition,
         action,
         next,

@@ -791,6 +791,11 @@
                         "type": "string"
                     }
                 },
+                "default_controller": {
+                    "type": "string",
+                    "title": "默认控制器",
+                    "description": "💡 v2.5.0 可选。指定该任务执行时默认使用的控制器名称，值应与 controller 配置中的 name 字段对应"
+                },
                 "pipeline_override": {
                     "$ref": "#/definitions/pipelineOverride",
                     "title": "Pipeline 覆盖",
@@ -930,6 +935,11 @@
             "items": {
                 "$ref": "#/definitions/controllerItem"
             }
+        },
+        "default_controller": {
+            "type": "string",
+            "title": "默认控制器",
+            "description": "💡 v2.5.0 可选。指定项目级默认控制器名称，值应与 controller 配置中的 name 字段对应"
         },
         "resource": {
             "type": "array",

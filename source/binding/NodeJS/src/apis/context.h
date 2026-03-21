@@ -53,6 +53,8 @@ struct ContextImpl : public maajs::NativeClassBase
     std::optional<maajs::ValueType> get_node_data_parsed(std::string node_name);
     MaaTaskId get_task_id();
     maajs::ValueType get_tasker();
+    std::optional<std::string> get_current_controller_name();
+    std::optional<maajs::ValueType> get_current_controller();
     maajs::ValueType clone();
     void set_anchor(std::string anchor_name, std::string node_name);
     std::optional<std::string> get_anchor(std::string anchor_name);
@@ -69,4 +71,3 @@ struct ContextImpl : public maajs::NativeClassBase
     static ContextImpl* ctor(const maajs::CallbackInfo& info);
     static void init_proto(maajs::ObjectType proto, maajs::FunctionType ctor);
 };
-

@@ -291,6 +291,9 @@ bool AgentClient::handle_inserted_request(const json::value& j)
     else if (handle_context_tasker(j)) {
         return true;
     }
+    else if (handle_context_current_controller_name(j)) {
+        return true;
+    }
     else if (handle_context_set_anchor(j)) {
         return true;
     }
@@ -338,6 +341,12 @@ bool AgentClient::handle_inserted_request(const json::value& j)
         return true;
     }
     else if (handle_tasker_controller(j)) {
+        return true;
+    }
+    else if (handle_tasker_named_controller(j)) {
+        return true;
+    }
+    else if (handle_tasker_default_controller_name(j)) {
         return true;
     }
     else if (handle_tasker_clear_cache(j)) {
@@ -813,6 +822,28 @@ bool AgentClient::handle_context_tasker(const json::value& j)
     return true;
 }
 
+bool AgentClient::handle_context_current_controller_name(const json::value& j)
+{
+    if (!j.is<ContextCurrentControllerNameReverseRequest>()) {
+        return false;
+    }
+
+    const ContextCurrentControllerNameReverseRequest& req = j.as<ContextCurrentControllerNameReverseRequest>();
+    LogFunc << VAR(req) << VAR(ipc_addr_);
+
+    MaaContext* context = query_context(req.context_id);
+    if (!context) {
+        LogError << "context not found" << VAR(req.context_id);
+        return false;
+    }
+
+    ContextCurrentControllerNameReverseResponse resp {
+        .controller_name = context->current_controller_name(),
+    };
+    send(resp);
+    return true;
+}
+
 bool AgentClient::handle_context_set_anchor(const json::value& j)
 {
     if (!j.is<ContextSetAnchorReverseRequest>()) {
@@ -1163,6 +1194,45 @@ bool AgentClient::handle_tasker_controller(const json::value& j)
     MaaController* controller = tasker->controller();
     TaskerControllerReverseResponse resp {
         .controller_id = controller_id(controller),
+    };
+    send(resp);
+    return true;
+}
+
+bool AgentClient::handle_tasker_named_controller(const json::value& j)
+{
+    if (!j.is<TaskerNamedControllerReverseRequest>()) {
+        return false;
+    }
+    const TaskerNamedControllerReverseRequest& req = j.as<TaskerNamedControllerReverseRequest>();
+    LogFunc << VAR(req) << VAR(ipc_addr_);
+    MaaTasker* tasker = query_tasker(req.tasker_id);
+    if (!tasker) {
+        LogError << "tasker not found" << VAR(req.tasker_id);
+        return false;
+    }
+    MaaController* controller = tasker->controller(req.controller_name);
+    TaskerNamedControllerReverseResponse resp {
+        .controller_id = controller_id(controller),
+    };
+    send(resp);
+    return true;
+}
+
+bool AgentClient::handle_tasker_default_controller_name(const json::value& j)
+{
+    if (!j.is<TaskerDefaultControllerNameReverseRequest>()) {
+        return false;
+    }
+    const TaskerDefaultControllerNameReverseRequest& req = j.as<TaskerDefaultControllerNameReverseRequest>();
+    LogFunc << VAR(req) << VAR(ipc_addr_);
+    MaaTasker* tasker = query_tasker(req.tasker_id);
+    if (!tasker) {
+        LogError << "tasker not found" << VAR(req.tasker_id);
+        return false;
+    }
+    TaskerDefaultControllerNameReverseResponse resp {
+        .controller_name = tasker->default_controller_name(),
     };
     send(resp);
     return true;

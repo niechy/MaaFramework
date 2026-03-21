@@ -471,6 +471,7 @@ json::object PipelineDumper::dump(const PipelineData& pp)
 {
     PipelineV2::JPipelineData data;
 
+    data.controller = pp.controller;
     data.next = pp.next;
     data.rate_limit = pp.rate_limit.count();
     data.timeout = pp.reco_timeout.count();

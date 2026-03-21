@@ -191,8 +191,7 @@ Tasker* ActionHelper::tasker() const
 
 MAA_CTRL_NS::ControllerAgent* ActionHelper::controller()
 {
-    auto* t = tasker();
-    return t ? t->controller() : nullptr;
+    return context_ ? context_->controller_for_current_node() : nullptr;
 }
 
 MAA_TASK_NS_END

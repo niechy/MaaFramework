@@ -209,6 +209,31 @@ MaaTasker* RemoteContext::tasker() const
     return tasker_.get();
 }
 
+std::string RemoteContext::current_controller_name() const
+{
+    ContextCurrentControllerNameReverseRequest req {
+        .context_id = context_id_,
+    };
+    auto resp_opt = server_.send_and_recv<ContextCurrentControllerNameReverseResponse>(req);
+    if (!resp_opt) {
+        return {};
+    }
+    return resp_opt->controller_name;
+}
+
+MaaController* RemoteContext::current_controller() const
+{
+    auto* remote_tasker = dynamic_cast<RemoteTasker*>(tasker());
+    if (!remote_tasker) {
+        return nullptr;
+    }
+    auto name = current_controller_name();
+    if (name.empty()) {
+        return remote_tasker->controller();
+    }
+    return remote_tasker->controller(name);
+}
+
 void RemoteContext::set_anchor(const std::string& anchor_name, const std::string& node_name)
 {
     ContextSetAnchorReverseRequest req {

@@ -58,6 +58,8 @@ public: // from MaaContextAPI
     virtual Context* clone() const override;
     virtual MaaTaskId task_id() const override;
     virtual Tasker* tasker() const override;
+    virtual std::string current_controller_name() const override;
+    virtual MaaController* current_controller() const override;
     virtual size_t get_hit_count(const std::string& node_name) const override;
     virtual void clear_hit_count(const std::string& node_name) override;
     virtual void set_anchor(const std::string& anchor_name, const std::string& node_name) override;
@@ -67,6 +69,13 @@ public:
     std::optional<PipelineData> get_pipeline_data(const std::string& node_name) const;
     std::optional<PipelineData> get_pipeline_data(const MAA_RES_NS::NodeAttr& node_attr) const;
     std::vector<cv::Mat> get_images(const std::vector<std::string>& names);
+    std::string resolve_controller_name(const std::string& node_name) const;
+    MAA_CTRL_NS::ControllerAgent* resolve_controller(const std::string& node_name) const;
+    MAA_CTRL_NS::ControllerAgent* controller_for_current_node() const;
+    void set_current_node_name(std::string name);
+    const std::string& current_node_name() const;
+    void set_default_controller_name(std::string name);
+    const std::string& default_controller_name() const;
 
     bool& need_to_stop();
     bool check_hit_count(const PipelineData& data);
@@ -82,6 +91,8 @@ private:
     // context level
     PipelineDataMap pipeline_override_;
     std::unordered_map<std::string, cv::Mat> image_override_;
+    std::string current_node_name_;
+    std::string default_controller_name_;
 
     // task level
     std::shared_ptr<TaskState> task_state_ = nullptr;

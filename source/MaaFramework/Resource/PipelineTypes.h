@@ -365,6 +365,7 @@ struct PipelineData
 
     std::string name;
     bool enabled = true;
+    std::string controller;
 
     Recognition::Type reco_type = Recognition::Type::DirectHit;
     Recognition::Param reco_param = MAA_VISION_NS::DirectHitParam { };

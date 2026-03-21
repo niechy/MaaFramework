@@ -156,12 +156,17 @@ bool Parser::check_configuration(const InterfaceData& data, Configuration& confi
         return false;
     }
 
-    auto controller_iter = std::ranges::find(data.controller, config.controller.name, std::mem_fn(&InterfaceData::Controller::name));
+    if (config.default_controller.empty()) {
+        config.default_controller = !data.default_controller.empty() ? data.default_controller : config.controller.name;
+    }
+
+    auto controller_iter = std::ranges::find(data.controller, config.default_controller, std::mem_fn(&InterfaceData::Controller::name));
     if (controller_iter == data.controller.end()) {
-        LogWarn << "Controller not found" << VAR(config.controller.name);
-        config.controller.name.clear();
+        LogWarn << "Controller not found" << VAR(config.default_controller);
+        config.default_controller.clear();
         return false;
     }
+    config.controller.name = controller_iter->name;
     config.controller.type = controller_iter->type;
 
     return !erased;
@@ -173,6 +178,14 @@ bool Parser::check_task(const InterfaceData& data, Configuration::Task& config_t
     if (data_iter == data.task.end()) {
         LogWarn << "Task not found" << VAR(config_task.name);
         return false;
+    }
+
+    if (!config_task.default_controller.empty()) {
+        auto ctrl_iter = std::ranges::find(data.controller, config_task.default_controller, std::mem_fn(&InterfaceData::Controller::name));
+        if (ctrl_iter == data.controller.end()) {
+            LogWarn << "Task default controller not found" << VAR(config_task.name) << VAR(config_task.default_controller);
+            config_task.default_controller.clear();
+        }
     }
 
     for (auto& config_option : config_task.option) {

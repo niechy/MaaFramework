@@ -4151,6 +4151,13 @@
                     "$ref": "#/$defs/ActionProperty",
                     "markdownDescription": "*string* | *object* (v2)\n\n执行的动作。可选，默认 `DoNothing` 。\n\n可选的值：`DoNothing` | `Click` | `LongPress` | `Swipe` | `MultiSwipe` | `TouchDown` | `TouchMove` | `TouchUp` | `ClickKey` | `LongPressKey` | `KeyDown` | `KeyUp` | `InputText` | `StartApp` | `StopApp` | `StopTask` | `Command` | `Custom`\n\n详见 [动作类型](#动作类型)。"
                 },
+                "controller": {
+                    "title": "Controller Property",
+                    "description": "控制器名称。可选，默认空。指定该节点执行时使用的控制器名称。",
+                    "type": "string",
+                    "default": "",
+                    "markdownDescription": "*string*\n\n控制器名称。可选，默认空。\n\n当设置后，该节点会优先使用指定的 controller；否则回退到任务默认 controller，再回退到接口默认 controller。"
+                },
                 "next": {
                     "title": "Next Property",
                     "description": "接下来要执行的节点列表。可选，默认空。",

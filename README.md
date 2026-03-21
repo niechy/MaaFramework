@@ -45,6 +45,8 @@ _✨ 基于图像识别的自动化黑盒测试框架 ✨_
 
 低代码的同时仍拥有高扩展性，旨在打造一款丰富、领先、且实用的开源库，助力开发者轻松编写出更好的黑盒测试程序，并推广普及。
 
+目前框架支持在同一 Tasker 中绑定多个命名 controller，并通过 `interface.default_controller`、`task.default_controller` 与 pipeline 节点 `controller` 字段在项目级、任务级、节点级切换目标 controller。具体配置见 PI 与 Pipeline 协议文档。
+
 ## 即刻开始
 
 > [!TIP]

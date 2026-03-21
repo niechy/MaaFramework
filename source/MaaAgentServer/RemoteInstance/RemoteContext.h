@@ -37,6 +37,8 @@ public:
 
     virtual MaaTaskId task_id() const override;
     virtual MaaTasker* tasker() const override;
+    virtual std::string current_controller_name() const override;
+    virtual MaaController* current_controller() const override;
 
     virtual void set_anchor(const std::string& anchor_name, const std::string& node_name) override;
     virtual std::optional<std::string> get_anchor(const std::string& anchor_name) const override;

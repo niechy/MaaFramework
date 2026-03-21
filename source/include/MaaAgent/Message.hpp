@@ -14,7 +14,7 @@ MAA_AGENT_NS_BEGIN
 // ReverseRequest: server -> client
 
 using MessageTypePlaceholder = int;
-inline static constexpr int kProtocolVersion = 7;
+inline static constexpr int kProtocolVersion = 8;
 
 struct StartUpRequest
 {
@@ -381,6 +381,22 @@ struct ContextTaskerReverseResponse
     MEO_JSONIZATION(tasker_id, _ContextTaskerReverseResponse);
 };
 
+struct ContextCurrentControllerNameReverseRequest
+{
+    std::string context_id;
+
+    MessageTypePlaceholder _ContextCurrentControllerNameReverseRequest = 1;
+    MEO_JSONIZATION(context_id, _ContextCurrentControllerNameReverseRequest);
+};
+
+struct ContextCurrentControllerNameReverseResponse
+{
+    std::string controller_name;
+
+    MessageTypePlaceholder _ContextCurrentControllerNameReverseResponse = 1;
+    MEO_JSONIZATION(controller_name, _ContextCurrentControllerNameReverseResponse);
+};
+
 struct ContextSetAnchorReverseRequest
 {
     std::string context_id;
@@ -651,6 +667,39 @@ struct TaskerControllerReverseResponse
 
     MessageTypePlaceholder _TaskerControllerReverseResponse = 1;
     MEO_JSONIZATION(controller_id, _TaskerControllerReverseResponse);
+};
+
+struct TaskerNamedControllerReverseRequest
+{
+    std::string tasker_id;
+    std::string controller_name;
+
+    MessageTypePlaceholder _TaskerNamedControllerReverseRequest = 1;
+    MEO_JSONIZATION(tasker_id, controller_name, _TaskerNamedControllerReverseRequest);
+};
+
+struct TaskerNamedControllerReverseResponse
+{
+    std::string controller_id;
+
+    MessageTypePlaceholder _TaskerNamedControllerReverseResponse = 1;
+    MEO_JSONIZATION(controller_id, _TaskerNamedControllerReverseResponse);
+};
+
+struct TaskerDefaultControllerNameReverseRequest
+{
+    std::string tasker_id;
+
+    MessageTypePlaceholder _TaskerDefaultControllerNameReverseRequest = 1;
+    MEO_JSONIZATION(tasker_id, _TaskerDefaultControllerNameReverseRequest);
+};
+
+struct TaskerDefaultControllerNameReverseResponse
+{
+    std::string controller_name;
+
+    MessageTypePlaceholder _TaskerDefaultControllerNameReverseResponse = 1;
+    MEO_JSONIZATION(controller_name, _TaskerDefaultControllerNameReverseResponse);
 };
 
 struct TaskerClearCacheReverseRequest

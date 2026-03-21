@@ -77,6 +77,8 @@ MaaFramework/
 3. **MaaTasker**：任务执行器，绑定 Resource 和 Controller 后执行任务
 4. **MaaContext**：任务上下文，在 Custom 回调中提供运行时操作能力
 
+补充：当前框架已支持一个 Tasker 绑定多个命名 controller。开发 `Tasker / Context / Agent` 相关功能时，需要同时考虑默认 controller、节点级 controller 覆写，以及 Agent 侧 `current_controller` / `current_controller_name` 的可见性。
+
 ### 执行流程
 
 ```text

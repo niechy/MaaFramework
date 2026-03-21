@@ -121,6 +121,8 @@ public:
 
     virtual bool bind_resource(MaaResource* resource) = 0;
     virtual bool bind_controller(MaaController* controller) = 0;
+    virtual bool bind_controller(const std::string& name, MaaController* controller) = 0;
+    virtual bool set_default_controller(const std::string& name) = 0;
     virtual bool inited() const = 0;
 
     virtual bool set_option(MaaTaskerOption key, MaaOptionValue value, MaaOptionValueSize val_size) = 0;
@@ -144,6 +146,8 @@ public:
 
     virtual MaaResource* resource() const = 0;
     virtual MaaController* controller() const = 0;
+    virtual MaaController* controller(const std::string& name) const = 0;
+    virtual std::string default_controller_name() const = 0;
 
     virtual void clear_cache() = 0;
     virtual std::optional<MAA_TASK_NS::TaskDetail> get_task_detail(MaaTaskId task_id) const = 0;
@@ -178,6 +182,8 @@ public:
 
     virtual MaaTaskId task_id() const = 0;
     virtual MaaTasker* tasker() const = 0;
+    virtual std::string current_controller_name() const = 0;
+    virtual MaaController* current_controller() const = 0;
 
     virtual void set_anchor(const std::string& anchor_name, const std::string& node_name) = 0;
     virtual std::optional<std::string> get_anchor(const std::string& anchor_name) const = 0;

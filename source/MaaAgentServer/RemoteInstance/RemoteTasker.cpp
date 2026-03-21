@@ -26,6 +26,18 @@ bool RemoteTasker::bind_controller(MaaController* controller)
     return false;
 }
 
+bool RemoteTasker::bind_controller(const std::string& name, MaaController* controller)
+{
+    LogError << "Can NOT bind named controller at remote tasker" << VAR(name) << VAR_VOIDP(controller);
+    return false;
+}
+
+bool RemoteTasker::set_default_controller(const std::string& name)
+{
+    LogError << "Can NOT set default controller at remote tasker" << VAR(name);
+    return false;
+}
+
 bool RemoteTasker::inited() const
 {
     TaskerInitedReverseRequest req {
@@ -194,6 +206,32 @@ MaaController* RemoteTasker::controller() const
     }
     controller_ = std::make_unique<RemoteController>(server_, resp_opt->controller_id);
     return controller_.get();
+}
+
+MaaController* RemoteTasker::controller(const std::string& name) const
+{
+    TaskerNamedControllerReverseRequest req {
+        .tasker_id = tasker_id_,
+        .controller_name = name,
+    };
+    auto resp_opt = server_.send_and_recv<TaskerNamedControllerReverseResponse>(req);
+    if (!resp_opt) {
+        return nullptr;
+    }
+    controller_ = std::make_unique<RemoteController>(server_, resp_opt->controller_id);
+    return controller_.get();
+}
+
+std::string RemoteTasker::default_controller_name() const
+{
+    TaskerDefaultControllerNameReverseRequest req {
+        .tasker_id = tasker_id_,
+    };
+    auto resp_opt = server_.send_and_recv<TaskerDefaultControllerNameReverseResponse>(req);
+    if (!resp_opt) {
+        return {};
+    }
+    return resp_opt->controller_name;
 }
 
 void RemoteTasker::clear_cache()

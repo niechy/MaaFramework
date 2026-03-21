@@ -47,6 +47,8 @@ _✨ An automation black-box testing framework based on image recognition ✨_
 
 It offers low-code simplicity while maintaining high extensibility. The framework aims to create a rich, leading-edge, and practical open-source library, empowering developers to easily write better black-box test programs and promoting widespread use.
 
+The framework now supports binding multiple named controllers to the same Tasker and switching the active target controller at the project, task, and pipeline-node levels via `interface.default_controller`, `task.default_controller`, and the pipeline node `controller` field. See the PI and Pipeline protocol documents for details.
+
 ## Get Started
 
 > [!TIP]

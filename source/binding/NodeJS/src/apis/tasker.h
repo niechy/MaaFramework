@@ -60,6 +60,10 @@ struct TaskerImpl : public maajs::NativeClassBase
     std::optional<maajs::ValueType> get_resource();
     void set_controller(std::optional<maajs::NativeObject<ControllerImpl>> ctrl);
     std::optional<maajs::ValueType> get_controller();
+    void bind_named_controller(std::string name, std::optional<maajs::NativeObject<ControllerImpl>> ctrl);
+    void set_default_controller(std::string name);
+    std::optional<maajs::ValueType> get_controller_by_name(std::string name);
+    std::optional<std::string> get_default_controller_name();
     void clear_cache();
     void override_pipeline(MaaTaskId task_id, maajs::ValueType pipeline);
     std::optional<maajs::ValueType> recognition_detail(MaaRecoId id);
@@ -79,4 +83,3 @@ struct TaskerImpl : public maajs::NativeClassBase
     static TaskerImpl* ctor(const maajs::CallbackInfo&);
     static void init_proto(maajs::ObjectType proto, maajs::FunctionType);
 };
-

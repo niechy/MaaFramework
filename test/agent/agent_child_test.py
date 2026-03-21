@@ -247,6 +247,12 @@ class MyAction(CustomAction):
         # Controller API 测试 (通过 context.tasker.controller)
         # ============================================================
         controller = context.tasker.controller
+        named_controller = context.tasker.get_controller(
+            context.tasker.default_controller_name
+        )
+        print(f"  current_controller_name: {context.current_controller_name}")
+        assert named_controller is not None, "named controller should not be None"
+        assert context.current_controller is not None, "current controller should not be None"
 
         # 测试 connected 和 uuid
         connected = controller.connected

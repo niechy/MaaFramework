@@ -135,6 +135,8 @@ class MyRecognition(CustomRecognition):
         new_ctx = context.clone()
         new_ctx.override_pipeline({"TaskA": {}, "TaskB": {}})
         new_ctx.override_next(argv.node_name, ["TaskA", "TaskB"])
+        print(f"  current_controller_name: {new_ctx.current_controller_name}")
+        assert new_ctx.current_controller is not None, "current_controller should not be None"
 
         # 测试 get_node_data/get_node_object
         node_data = new_ctx.get_node_data(argv.node_name)
@@ -494,6 +496,8 @@ def test_tasker_api(resource: Resource, controller: DbgController):
 
     # 绑定资源和控制器
     tasker.bind(resource, controller)
+    tasker.bind_named_controller("main", controller)
+    tasker.set_default_controller("main")
     print(f"  inited: {tasker.inited}")
 
     if not tasker.inited:
@@ -503,8 +507,12 @@ def test_tasker_api(resource: Resource, controller: DbgController):
     # 测试 resource 和 controller 属性
     bound_resource = tasker.resource
     bound_controller = tasker.controller
+    named_controller = tasker.get_controller("main")
     print(f"  bound_resource loaded: {bound_resource.loaded}")
     print(f"  bound_controller connected: {bound_controller.connected}")
+    print(f"  default_controller_name: {tasker.default_controller_name}")
+    assert named_controller is not None, "named_controller should not be None"
+    assert tasker.default_controller_name == "main", "default controller should be main"
 
     # 测试 post_task
     ppover = {

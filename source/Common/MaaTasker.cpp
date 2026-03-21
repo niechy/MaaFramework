@@ -113,6 +113,38 @@ MaaBool MaaTaskerBindController(MaaTasker* tasker, MaaController* ctrl)
     return tasker->bind_controller(ctrl);
 }
 
+MaaBool MaaTaskerBindNamedController(MaaTasker* tasker, const char* name, MaaController* ctrl)
+{
+    LogFunc << VAR_VOIDP(tasker) << VAR(name) << VAR_VOIDP(ctrl);
+
+    if (!tasker || !ctrl) {
+        LogError << "handle is null";
+        return false;
+    }
+    if (!name) {
+        LogError << "name is null";
+        return false;
+    }
+
+    return tasker->bind_controller(name, ctrl);
+}
+
+MaaBool MaaTaskerSetDefaultController(MaaTasker* tasker, const char* name)
+{
+    LogFunc << VAR_VOIDP(tasker) << VAR(name);
+
+    if (!tasker) {
+        LogError << "handle is null";
+        return false;
+    }
+    if (!name) {
+        LogError << "name is null";
+        return false;
+    }
+
+    return tasker->set_default_controller(name);
+}
+
 MaaBool MaaTaskerInited(const MaaTasker* tasker)
 {
     if (!tasker) {
@@ -294,6 +326,30 @@ MaaController* MaaTaskerGetController(const MaaTasker* tasker)
         return nullptr;
     }
     return tasker->controller();
+}
+
+MaaController* MaaTaskerGetNamedController(const MaaTasker* tasker, const char* name)
+{
+    if (!tasker) {
+        LogError << "handle is null";
+        return nullptr;
+    }
+    if (!name) {
+        LogError << "name is null";
+        return nullptr;
+    }
+    return tasker->controller(name);
+}
+
+MaaBool MaaTaskerGetDefaultControllerName(const MaaTasker* tasker, MaaStringBuffer* buffer)
+{
+    if (!tasker || !buffer) {
+        LogError << "handle is null";
+        return false;
+    }
+
+    buffer->set(tasker->default_controller_name());
+    return true;
 }
 
 MaaBool MaaTaskerClearCache(MaaTasker* tasker)

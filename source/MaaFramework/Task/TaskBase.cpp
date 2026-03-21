@@ -20,6 +20,9 @@ TaskBase::TaskBase(std::string entry, Tasker* tasker, std::shared_ptr<Context> c
     , cur_node_(entry_)
     , context_(context ? std::move(context) : Context::create(task_id_, tasker))
 {
+    if (context_) {
+        context_->set_current_node_name(cur_node_);
+    }
 }
 
 bool TaskBase::override_pipeline(const json::value& pipeline_override)
@@ -49,7 +52,7 @@ MAA_RES_NS::ResourceMgr* TaskBase::resource()
 
 MAA_CTRL_NS::ControllerAgent* TaskBase::controller()
 {
-    return tasker_ ? tasker_->controller() : nullptr;
+    return context_ ? context_->controller_for_current_node() : nullptr;
 }
 
 RecoResult TaskBase::run_recognition(const cv::Mat& image, const PipelineData& data, std::shared_ptr<MAA_VISION_NS::OCRCache> ocr_cache)
@@ -60,6 +63,8 @@ RecoResult TaskBase::run_recognition(const cv::Mat& image, const PipelineData& d
         LogError << "context is null";
         return { };
     }
+
+    context_->set_current_node_name(data.name);
 
     Recognizer recognizer(tasker_, *context_, image, std::move(ocr_cache));
 
@@ -91,6 +96,8 @@ ActionResult TaskBase::run_action(const RecoResult& reco, const PipelineData& da
         LogError << "context is null";
         return { };
     }
+
+    context_->set_current_node_name(data.name);
 
     if (!reco.box) {
         LogError << "reco box is nullopt";

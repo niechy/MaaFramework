@@ -332,6 +332,28 @@ class Context:
         """
         return self._tasker
 
+    @property
+    def current_controller_name(self) -> str:
+        """获取当前节点生效的控制器名称 / Get active controller name for current node"""
+        string_buffer = StringBuffer()
+        if not Library.framework().MaaContextGetCurrentControllerName(
+            self._handle, string_buffer._handle
+        ):
+            raise RuntimeError("Failed to get current controller name.")
+        return string_buffer.get()
+
+    @property
+    def current_controller(self):
+        """获取当前节点生效的控制器 / Get active controller for current node"""
+        controller_handle = Library.framework().MaaContextGetCurrentController(
+            self._handle
+        )
+        if not controller_handle:
+            return None
+        from .controller import Controller
+
+        return Controller(handle=controller_handle)
+
     def get_task_job(self) -> TaskJob:
         """获取对应任务号的任务作业 / Get task job for corresponding task id
 
@@ -567,6 +589,17 @@ class Context:
 
         Library.framework().MaaContextGetTasker.restype = MaaTaskerHandle
         Library.framework().MaaContextGetTasker.argtypes = [
+            MaaContextHandle,
+        ]
+
+        Library.framework().MaaContextGetCurrentControllerName.restype = MaaBool
+        Library.framework().MaaContextGetCurrentControllerName.argtypes = [
+            MaaContextHandle,
+            MaaStringBufferHandle,
+        ]
+
+        Library.framework().MaaContextGetCurrentController.restype = MaaControllerHandle
+        Library.framework().MaaContextGetCurrentController.argtypes = [
             MaaContextHandle,
         ]
 

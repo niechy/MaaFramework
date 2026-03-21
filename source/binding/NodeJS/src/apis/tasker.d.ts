@@ -158,6 +158,10 @@ declare global {
             get resource(): Resource | null
             set controller(res: Controller | null)
             get controller(): Controller | null
+            bind_named_controller(name: string, controller: Controller): void
+            set_default_controller(name: string): void
+            get_controller(name: string): Controller | null
+            get default_controller_name(): string | null
             clear_cache(): void
             override_pipeline(
                 task_id: TaskId,

@@ -69,6 +69,8 @@ extern "C"
     MAA_FRAMEWORK_API MaaTaskId MaaContextGetTaskId(const MaaContext* context);
 
     MAA_FRAMEWORK_API MaaTasker* MaaContextGetTasker(const MaaContext* context);
+    MAA_FRAMEWORK_API MaaBool MaaContextGetCurrentControllerName(const MaaContext* context, /* out */ MaaStringBuffer* buffer);
+    MAA_FRAMEWORK_API MaaController* MaaContextGetCurrentController(const MaaContext* context);
 
     MAA_FRAMEWORK_API MaaContext* MaaContextClone(const MaaContext* context);
 

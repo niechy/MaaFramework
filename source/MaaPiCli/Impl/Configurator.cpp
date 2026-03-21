@@ -169,12 +169,15 @@ std::optional<RuntimeParam> Configurator::generate_runtime() const
         return std::nullopt;
     }
 
-    // Find current controller for attach_resource_path
+    runtime.default_controller = config_.default_controller.empty() ? data_.default_controller : config_.default_controller;
+    if (runtime.default_controller.empty() && !config_.controller.name.empty()) {
+        runtime.default_controller = config_.controller.name;
+    }
 
     auto controller_iter =
-        std::ranges::find_if(data_.controller, [&](const auto& controller) { return controller.name == config_.controller.name; });
+        std::ranges::find_if(data_.controller, [&](const auto& controller) { return controller.name == runtime.default_controller; });
     if (controller_iter == data_.controller.end()) {
-        LogWarn << "Controller not found" << VAR(config_.controller.name);
+        LogWarn << "Controller not found" << VAR(runtime.default_controller);
         return std::nullopt;
     }
     auto& controller = *controller_iter;
@@ -197,114 +200,125 @@ std::optional<RuntimeParam> Configurator::generate_runtime() const
         return std::nullopt;
     }
 
-    switch (controller.type) {
-    case InterfaceData::Controller::Type::Adb: {
-        RuntimeParam::AdbParam adb;
-
-        adb.name = config_.adb.name;
-        adb.adb_path = config_.adb.adb_path;
-        adb.address = config_.adb.address;
-        adb.agent_path = MaaNS::path_to_utf8_string(resource_dir_ / "MaaAgentBinary");
-
-        runtime.controller_param = std::move(adb);
-    } break;
-
-    case InterfaceData::Controller::Type::Win32: {
-        RuntimeParam::Win32Param win32;
-
-        win32.hwnd = config_.win32.hwnd;
-
-        // v2: parse from config, use default if not specified or invalid
-        if (!controller.win32.screencap.empty()) {
-            win32.screencap = parse_win32_screencap_method(controller.win32.screencap);
-        }
-        if (win32.screencap == MaaWin32ScreencapMethod_None) {
-            win32.screencap = MaaWin32ScreencapMethod_DXGI_DesktopDup;
+    auto get_controller_config = [&](const std::string& controller_name) -> std::optional<Configuration::ControllerConfig> {
+        if (auto iter = config_.controllers.find(controller_name); iter != config_.controllers.end()) {
+            return iter->second;
         }
 
-        if (!controller.win32.mouse.empty()) {
-            win32.mouse = parse_win32_input_method(controller.win32.mouse);
-        }
-        if (win32.mouse == MaaWin32InputMethod_None) {
-            win32.mouse = MaaWin32InputMethod_Seize;
-        }
-
-        if (!controller.win32.keyboard.empty()) {
-            win32.keyboard = parse_win32_input_method(controller.win32.keyboard);
-        }
-        if (win32.keyboard == MaaWin32InputMethod_None) {
-            win32.keyboard = MaaWin32InputMethod_Seize;
-        }
-
-        runtime.controller_param = std::move(win32);
-    } break;
-
-    case InterfaceData::Controller::Type::MacOS: {
-        RuntimeParam::MacOSParam macos;
-
-        macos.window_id = config_.macos.window_id;
-
-        // v2: parse from config, use default if not specified or invalid
-        if (!controller.macos.screencap.empty()) {
-            macos.screencap = parse_macos_screencap_method(controller.macos.screencap);
-        }
-        if (macos.screencap == MaaMacOSScreencapMethod_None) {
-            macos.screencap = MaaMacOSScreencapMethod_ScreenCaptureKit;
-        }
-
-        if (!controller.macos.input.empty()) {
-            macos.input = parse_macos_input_method(controller.macos.input);
-        }
-        if (macos.input == MaaMacOSInputMethod_None) {
-            macos.input = MaaMacOSInputMethod_GlobalEvent;
-        }
-
-        runtime.controller_param = std::move(macos);
-    } break;
-
-    case InterfaceData::Controller::Type::PlayCover: {
-        RuntimeParam::PlayCoverParam playcover;
-
-        playcover.address = config_.playcover.address;
-        playcover.uuid = config_.playcover.uuid.empty() ? "maa.playcover" : config_.playcover.uuid;
-
-        if (playcover.address.empty()) {
-            LogError << "PlayCover address is empty";
+        auto data_ctrl_iter =
+            std::ranges::find_if(data_.controller, [&](const auto& c) { return c.name == controller_name; });
+        if (data_ctrl_iter == data_.controller.end()) {
             return std::nullopt;
         }
 
-        runtime.controller_param = std::move(playcover);
-    } break;
+        Configuration::ControllerConfig cfg;
+        cfg.controller.name = controller_name;
+        cfg.controller.type = data_ctrl_iter->type;
+        cfg.adb = config_.adb;
+        cfg.win32 = config_.win32;
+        cfg.macos = config_.macos;
+        cfg.playcover = config_.playcover;
+        cfg.gamepad = config_.gamepad;
+        cfg.wlroots = config_.wlroots;
+        return cfg;
+    };
 
-    case InterfaceData::Controller::Type::Gamepad: {
-        RuntimeParam::GamepadParam gamepad;
-
-        gamepad.hwnd = config_.gamepad.hwnd;
-        gamepad.gamepad_type =
-            parse_gamepad_type(config_.gamepad.gamepad_type.empty() ? controller.gamepad.gamepad_type : config_.gamepad.gamepad_type);
-
-        if (!controller.gamepad.screencap.empty()) {
-            gamepad.screencap = parse_win32_screencap_method(controller.gamepad.screencap);
+    auto build_controller_param =
+        [&](const InterfaceData::Controller& data_controller,
+            const Configuration::ControllerConfig& controller_config) -> std::optional<RuntimeParam::ControllerParam> {
+        switch (data_controller.type) {
+        case InterfaceData::Controller::Type::Adb: {
+            RuntimeParam::AdbParam adb;
+            adb.name = controller_config.adb.name;
+            adb.adb_path = controller_config.adb.adb_path;
+            adb.address = controller_config.adb.address;
+            adb.agent_path = MaaNS::path_to_utf8_string(resource_dir_ / "MaaAgentBinary");
+            return adb;
         }
-        if (gamepad.screencap == MaaWin32ScreencapMethod_None && gamepad.hwnd != nullptr) {
-            gamepad.screencap = MaaWin32ScreencapMethod_DXGI_DesktopDup;
+        case InterfaceData::Controller::Type::Win32: {
+            RuntimeParam::Win32Param win32;
+            win32.hwnd = controller_config.win32.hwnd;
+            if (!data_controller.win32.screencap.empty()) {
+                win32.screencap = parse_win32_screencap_method(data_controller.win32.screencap);
+            }
+            if (win32.screencap == MaaWin32ScreencapMethod_None) {
+                win32.screencap = MaaWin32ScreencapMethod_DXGI_DesktopDup;
+            }
+            if (!data_controller.win32.mouse.empty()) {
+                win32.mouse = parse_win32_input_method(data_controller.win32.mouse);
+            }
+            if (win32.mouse == MaaWin32InputMethod_None) {
+                win32.mouse = MaaWin32InputMethod_Seize;
+            }
+            if (!data_controller.win32.keyboard.empty()) {
+                win32.keyboard = parse_win32_input_method(data_controller.win32.keyboard);
+            }
+            if (win32.keyboard == MaaWin32InputMethod_None) {
+                win32.keyboard = MaaWin32InputMethod_Seize;
+            }
+            return win32;
         }
+        case InterfaceData::Controller::Type::MacOS: {
+            RuntimeParam::MacOSParam macos;
+            macos.window_id = controller_config.macos.window_id;
+            if (!data_controller.macos.screencap.empty()) {
+                macos.screencap = parse_macos_screencap_method(data_controller.macos.screencap);
+            }
+            if (macos.screencap == MaaMacOSScreencapMethod_None) {
+                macos.screencap = MaaMacOSScreencapMethod_ScreenCaptureKit;
+            }
+            if (!data_controller.macos.input.empty()) {
+                macos.input = parse_macos_input_method(data_controller.macos.input);
+            }
+            if (macos.input == MaaMacOSInputMethod_None) {
+                macos.input = MaaMacOSInputMethod_GlobalEvent;
+            }
+            return macos;
+        }
+        case InterfaceData::Controller::Type::PlayCover: {
+            RuntimeParam::PlayCoverParam playcover;
+            playcover.address = controller_config.playcover.address;
+            playcover.uuid = controller_config.playcover.uuid.empty() ? "maa.playcover" : controller_config.playcover.uuid;
+            if (playcover.address.empty()) {
+                LogError << "PlayCover address is empty";
+                return std::nullopt;
+            }
+            return playcover;
+        }
+        case InterfaceData::Controller::Type::Gamepad: {
+            RuntimeParam::GamepadParam gamepad;
+            gamepad.hwnd = controller_config.gamepad.hwnd;
+            gamepad.gamepad_type = parse_gamepad_type(
+                controller_config.gamepad.gamepad_type.empty() ? data_controller.gamepad.gamepad_type : controller_config.gamepad.gamepad_type);
+            if (!data_controller.gamepad.screencap.empty()) {
+                gamepad.screencap = parse_win32_screencap_method(data_controller.gamepad.screencap);
+            }
+            if (gamepad.screencap == MaaWin32ScreencapMethod_None && gamepad.hwnd != nullptr) {
+                gamepad.screencap = MaaWin32ScreencapMethod_DXGI_DesktopDup;
+            }
+            return gamepad;
+        }
+        case InterfaceData::Controller::Type::WlRoots: {
+            RuntimeParam::WlRootsParam wlroots;
+            wlroots.wlr_socket_path = controller_config.wlroots.wlr_socket_path;
+            return wlroots;
+        }
+        default:
+            LogError << "Unknown controller type" << VAR(data_controller.type);
+            return std::nullopt;
+        }
+    };
 
-        runtime.controller_param = std::move(gamepad);
-    } break;
-
-    case InterfaceData::Controller::Type::WlRoots: {
-        RuntimeParam::WlRootsParam wlroots;
-
-        wlroots.wlr_socket_path = config_.wlroots.wlr_socket_path;
-
-        runtime.controller_param = std::move(wlroots);
-    } break;
-
-    default: {
-        LogError << "Unknown controller type" << VAR(controller.type);
-        return std::nullopt;
-    }
+    for (const auto& data_controller : data_.controller) {
+        auto cfg_opt = get_controller_config(data_controller.name);
+        if (!cfg_opt) {
+            continue;
+        }
+        auto param_opt = build_controller_param(data_controller, *cfg_opt);
+        if (!param_opt) {
+            return std::nullopt;
+        }
+        runtime.controllers.emplace(data_controller.name, std::move(*param_opt));
     }
 
     // 设置分辨率配置
@@ -352,6 +366,7 @@ std::optional<RuntimeParam::Task> Configurator::generate_runtime_task(const Conf
 
     RuntimeParam::Task runtime_task { .name = data_task.name,
                                       .entry = data_task.entry,
+                                      .default_controller = config_task.default_controller.empty() ? data_task.default_controller : config_task.default_controller,
                                       .pipeline_override = json::array { data_task.pipeline_override } };
 
     for (const auto& config_option : config_task.option) {

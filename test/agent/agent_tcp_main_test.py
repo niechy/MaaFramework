@@ -57,11 +57,14 @@ def prepare_runtime():
 
     tasker = Tasker()
     tasker.bind(resource, dbg_controller)
+    tasker.bind_named_controller("main", dbg_controller)
+    tasker.set_default_controller("main")
     print(f"tasker: {tasker}")
 
     if not tasker.inited:
         print("failed to init tasker")
         exit(1)
+    print(f"default controller: {tasker.default_controller_name}")
 
     return resource, dbg_controller, tasker
 

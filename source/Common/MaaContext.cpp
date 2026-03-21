@@ -342,6 +342,27 @@ MaaTasker* MaaContextGetTasker(const MaaContext* context)
     return context->tasker();
 }
 
+MaaBool MaaContextGetCurrentControllerName(const MaaContext* context, MaaStringBuffer* buffer)
+{
+    if (!context || !buffer) {
+        LogError << "handle is null";
+        return false;
+    }
+
+    buffer->set(context->current_controller_name());
+    return true;
+}
+
+MaaController* MaaContextGetCurrentController(const MaaContext* context)
+{
+    if (!context) {
+        LogError << "handle is null";
+        return nullptr;
+    }
+
+    return context->current_controller();
+}
+
 MaaContext* MaaContextClone(const MaaContext* context)
 {
     if (!context) {

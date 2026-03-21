@@ -252,6 +252,38 @@ std::optional<maajs::ValueType> TaskerImpl::get_controller()
     return ControllerImpl::locate_object(env, ctrl);
 }
 
+void TaskerImpl::bind_named_controller(std::string name, std::optional<maajs::NativeObject<ControllerImpl>> ctrl)
+{
+    if (!ctrl || !MaaTaskerBindNamedController(tasker, name.c_str(), ctrl->impl->controller)) {
+        throw maajs::MaaError { "Tasker bind_named_controller failed" };
+    }
+}
+
+void TaskerImpl::set_default_controller(std::string name)
+{
+    if (!MaaTaskerSetDefaultController(tasker, name.c_str())) {
+        throw maajs::MaaError { "Tasker set_default_controller failed" };
+    }
+}
+
+std::optional<maajs::ValueType> TaskerImpl::get_controller_by_name(std::string name)
+{
+    auto ctrl = MaaTaskerGetNamedController(tasker, name.c_str());
+    if (!ctrl) {
+        return std::nullopt;
+    }
+    return ControllerImpl::locate_object(env, ctrl);
+}
+
+std::optional<std::string> TaskerImpl::get_default_controller_name()
+{
+    StringBuffer buffer;
+    if (!MaaTaskerGetDefaultControllerName(tasker, buffer)) {
+        return std::nullopt;
+    }
+    return buffer.str();
+}
+
 void TaskerImpl::clear_cache()
 {
     MaaTaskerClearCache(tasker);
@@ -453,6 +485,10 @@ void TaskerImpl::init_proto(maajs::ObjectType proto, maajs::FunctionType)
     MAA_BIND_GETTER(proto, "stopping", TaskerImpl::get_stopping);
     MAA_BIND_GETTER_SETTER(proto, "resource", TaskerImpl::get_resource, TaskerImpl::set_resource);
     MAA_BIND_GETTER_SETTER(proto, "controller", TaskerImpl::get_controller, TaskerImpl::set_controller);
+    MAA_BIND_FUNC(proto, "bind_named_controller", TaskerImpl::bind_named_controller);
+    MAA_BIND_FUNC(proto, "set_default_controller", TaskerImpl::set_default_controller);
+    MAA_BIND_FUNC(proto, "get_controller", TaskerImpl::get_controller_by_name);
+    MAA_BIND_GETTER(proto, "default_controller_name", TaskerImpl::get_default_controller_name);
     MAA_BIND_FUNC(proto, "clear_cache", TaskerImpl::clear_cache);
     MAA_BIND_FUNC(proto, "override_pipeline", TaskerImpl::override_pipeline);
     MAA_BIND_FUNC(proto, "recognition_detail", TaskerImpl::recognition_detail);

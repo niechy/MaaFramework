@@ -121,6 +121,7 @@ struct InterfaceData
         std::string label;
         std::string description;
         std::string entry;
+        std::string default_controller;
         bool default_check = false;
         json::object pipeline_override;
         std::vector<std::string> option;
@@ -132,6 +133,7 @@ struct InterfaceData
             MEO_OPT label,
             MEO_OPT description,
             entry,
+            MEO_OPT default_controller,
             MEO_OPT default_check,
             MEO_OPT pipeline_override,
             MEO_OPT option,
@@ -224,6 +226,7 @@ struct InterfaceData
     std::string contact;
     std::string license;
     std::string github;
+    std::string default_controller;
 
     std::vector<Controller> controller;
     std::vector<Resource> resource;
@@ -245,6 +248,7 @@ struct InterfaceData
         MEO_OPT contact,
         MEO_OPT license,
         MEO_OPT github,
+        MEO_OPT default_controller,
         controller,
         resource,
         task,
@@ -340,9 +344,23 @@ struct Configuration
     struct Task
     {
         std::string name;
+        std::string default_controller;
         std::vector<Option> option;
 
-        MEO_JSONIZATION(name, MEO_OPT option);
+        MEO_JSONIZATION(name, MEO_OPT default_controller, MEO_OPT option);
+    };
+
+    struct ControllerConfig
+    {
+        Controller controller;
+        AdbConfig adb;
+        Win32Config win32;
+        MacOSConfig macos;
+        PlayCoverConfig playcover;
+        GamepadConfig gamepad;
+        WlRootsConfig wlroots;
+
+        MEO_JSONIZATION(controller, MEO_OPT adb, MEO_OPT win32, MEO_OPT macos, MEO_OPT playcover, MEO_OPT gamepad, MEO_OPT wlroots);
     };
 
     Controller controller;
@@ -352,6 +370,8 @@ struct Configuration
     PlayCoverConfig playcover;
     GamepadConfig gamepad;
     WlRootsConfig wlroots;
+    std::string default_controller;
+    std::unordered_map<std::string, ControllerConfig> controllers;
     std::string resource;
     std::vector<Task> task;
 
@@ -363,6 +383,8 @@ struct Configuration
         MEO_OPT playcover,
         MEO_OPT gamepad,
         MEO_OPT wlroots,
+        MEO_OPT default_controller,
+        MEO_OPT controllers,
         resource,
         task);
 };
@@ -425,6 +447,7 @@ struct RuntimeParam
     {
         std::string name;
         std::string entry;
+        std::string default_controller;
         json::value pipeline_override;
     };
 
@@ -436,7 +459,10 @@ struct RuntimeParam
         std::filesystem::path cwd;
     };
 
-    std::variant<std::monostate, AdbParam, Win32Param, MacOSParam, PlayCoverParam, GamepadParam, WlRootsParam> controller_param;
+    using ControllerParam = std::variant<std::monostate, AdbParam, Win32Param, MacOSParam, PlayCoverParam, GamepadParam, WlRootsParam>;
+
+    std::string default_controller;
+    std::unordered_map<std::string, ControllerParam> controllers;
     std::vector<std::filesystem::path> resource_path;
 
     std::vector<Task> task;

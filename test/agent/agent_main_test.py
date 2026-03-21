@@ -57,11 +57,14 @@ def api_test():
 
     tasker = Tasker()
     tasker.bind(resource, dbg_controller)
+    tasker.bind_named_controller("main", dbg_controller)
+    tasker.set_default_controller("main")
     print(f"tasker: {tasker}")
 
     if not tasker.inited:
         print("failed to init tasker")
         exit(1)
+    print(f"default controller: {tasker.default_controller_name}")
 
     # ============================================================
     # AgentClient API 测试
@@ -113,7 +116,7 @@ def api_test():
     # ============================================================
     subprocess.Popen(
         [
-            "python",
+            sys.executable,
             str(Path(__file__).parent / "agent_child_test.py"),
             str(binding_dir),
             str(install_dir),

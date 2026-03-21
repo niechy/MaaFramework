@@ -722,7 +722,7 @@ ActionResult Actuator::stop_task(const std::string& name)
 
 MAA_CTRL_NS::ControllerAgent* Actuator::controller()
 {
-    return tasker_ ? tasker_->controller() : nullptr;
+    return context_.controller_for_current_node();
 }
 
 MAA_TASK_NS_END

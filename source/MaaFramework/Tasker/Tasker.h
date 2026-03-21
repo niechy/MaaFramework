@@ -3,6 +3,8 @@
 #include <map>
 #include <memory>
 #include <shared_mutex>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "Base/AsyncRunner.hpp"
@@ -26,6 +28,8 @@ public:
 
     virtual bool bind_resource(MaaResource* resource) override;
     virtual bool bind_controller(MaaController* controller) override;
+    virtual bool bind_controller(const std::string& name, MaaController* controller) override;
+    virtual bool set_default_controller(const std::string& name) override;
     virtual bool inited() const override;
 
     virtual bool set_option(MaaTaskerOption key, MaaOptionValue value, MaaOptionValueSize val_size) override;
@@ -47,6 +51,8 @@ public:
 
     virtual MAA_RES_NS::ResourceMgr* resource() const override;
     virtual MAA_CTRL_NS::ControllerAgent* controller() const override;
+    virtual MAA_CTRL_NS::ControllerAgent* controller(const std::string& name) const override;
+    virtual std::string default_controller_name() const override;
 
     virtual void clear_cache() override;
     virtual std::optional<MAA_TASK_NS::TaskDetail> get_task_detail(MaaTaskId task_id) const override;
@@ -81,7 +87,8 @@ private:
 
 private:
     MAA_RES_NS::ResourceMgr* resource_ = nullptr;
-    MAA_CTRL_NS::ControllerAgent* controller_ = nullptr;
+    std::string default_controller_name_;
+    std::unordered_map<std::string, MAA_CTRL_NS::ControllerAgent*> controllers_;
 
     bool need_to_stop_ = false;
 

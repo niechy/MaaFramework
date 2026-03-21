@@ -354,6 +354,7 @@ class JWaitFreezes:
 class JPipelineData:
     recognition: JRecognition  # 必选
     action: JAction  # 必选
+    controller: str = ""
     next: List[JNodeAttr] = field(default_factory=list)
     rate_limit: int = 1000
     timeout: int = 20000

@@ -2,6 +2,7 @@
 
 #include <format>
 #include <iostream>
+#include <unordered_map>
 
 #include <meojson/json.hpp>
 
@@ -74,101 +75,135 @@ bool Runner::run(const RuntimeParam& param)
 {
     MaaTasker* tasker_handle = MaaTaskerCreate();
 
-    MaaController* controller_handle = nullptr;
-    if (const auto* p_adb_param = std::get_if<RuntimeParam::AdbParam>(&param.controller_param)) {
-        RuntimeParam::AdbParam adb_param = reconfig_adb(*p_adb_param);
-        controller_handle = MaaAdbControllerCreate(
-            adb_param.adb_path.c_str(),
-            adb_param.address.c_str(),
-            adb_param.screencap,
-            adb_param.input,
-            adb_param.config.c_str(),
-            adb_param.agent_path.c_str());
-    }
-    else if (const auto* p_win32_param = std::get_if<RuntimeParam::Win32Param>(&param.controller_param)) {
-        controller_handle =
-            MaaWin32ControllerCreate(p_win32_param->hwnd, p_win32_param->screencap, p_win32_param->mouse, p_win32_param->keyboard);
-    }
-    else if (const auto* p_playcover_param = std::get_if<RuntimeParam::PlayCoverParam>(&param.controller_param)) {
-#if defined(__APPLE__)
-        controller_handle = MaaPlayCoverControllerCreate(p_playcover_param->address.c_str(), p_playcover_param->uuid.c_str());
-#else
-        std::ignore = p_playcover_param;
-        LogError << "PlayCover controller is only supported on macOS";
-        return false;
-#endif
-    }
-    else if (const auto* p_gamepad_param = std::get_if<RuntimeParam::GamepadParam>(&param.controller_param)) {
-#if defined(_WIN32)
-        controller_handle = MaaGamepadControllerCreate(p_gamepad_param->hwnd, p_gamepad_param->gamepad_type, p_gamepad_param->screencap);
-#else
-        std::ignore = p_gamepad_param;
-        LogError << "Gamepad controller is only supported on Windows";
-        return false;
-#endif
-    }
-    else if (const auto* p_macos_param = std::get_if<RuntimeParam::MacOSParam>(&param.controller_param)) {
-#if defined(__APPLE__)
-        controller_handle = MaaMacOSControllerCreate(p_macos_param->window_id, p_macos_param->screencap, p_macos_param->input);
-#else
-        std::ignore = p_macos_param;
-        LogError << "MacOS controller is only supported on macOS";
-        return false;
-#endif
-    }
-    else if (const auto* p_wlroots_param = std::get_if<RuntimeParam::WlRootsParam>(&param.controller_param)) {
-#if defined(__linux__)
-        controller_handle = MaaWlRootsControllerCreate(p_wlroots_param->wlr_socket_path.c_str());
-#else
-        std::ignore = p_wlroots_param;
-        LogError << "WlRoots controller is only supported on Linux";
-        return false;
-#endif
-    }
-    else {
-        LogError << "Unknown controller type";
-        return false;
-    }
+    std::unordered_map<std::string, MaaController*> controller_handles;
 
     MaaResource* resource_handle = MaaResourceCreate();
 
     OnScopeLeave([&]() {
         MaaTaskerDestroy(tasker_handle);
         MaaResourceDestroy(resource_handle);
-        MaaControllerDestroy(controller_handle);
+        for (auto& [name, handle] : controller_handles) {
+            std::ignore = name;
+            MaaControllerDestroy(handle);
+        }
     });
+
+    auto create_controller = [&](const RuntimeParam::ControllerParam& controller_param) -> MaaController* {
+        if (const auto* p_adb_param = std::get_if<RuntimeParam::AdbParam>(&controller_param)) {
+            RuntimeParam::AdbParam adb_param = reconfig_adb(*p_adb_param);
+            return MaaAdbControllerCreate(
+                adb_param.adb_path.c_str(),
+                adb_param.address.c_str(),
+                adb_param.screencap,
+                adb_param.input,
+                adb_param.config.c_str(),
+                adb_param.agent_path.c_str());
+        }
+        if (const auto* p_win32_param = std::get_if<RuntimeParam::Win32Param>(&controller_param)) {
+            return MaaWin32ControllerCreate(
+                p_win32_param->hwnd, p_win32_param->screencap, p_win32_param->mouse, p_win32_param->keyboard);
+        }
+        if (const auto* p_playcover_param = std::get_if<RuntimeParam::PlayCoverParam>(&controller_param)) {
+#if defined(__APPLE__)
+            return MaaPlayCoverControllerCreate(p_playcover_param->address.c_str(), p_playcover_param->uuid.c_str());
+#else
+            std::ignore = p_playcover_param;
+            LogError << "PlayCover controller is only supported on macOS";
+            return nullptr;
+#endif
+        }
+        if (const auto* p_gamepad_param = std::get_if<RuntimeParam::GamepadParam>(&controller_param)) {
+#if defined(_WIN32)
+            return MaaGamepadControllerCreate(p_gamepad_param->hwnd, p_gamepad_param->gamepad_type, p_gamepad_param->screencap);
+#else
+            std::ignore = p_gamepad_param;
+            LogError << "Gamepad controller is only supported on Windows";
+            return nullptr;
+#endif
+        }
+        if (const auto* p_macos_param = std::get_if<RuntimeParam::MacOSParam>(&controller_param)) {
+#if defined(__APPLE__)
+            return MaaMacOSControllerCreate(p_macos_param->window_id, p_macos_param->screencap, p_macos_param->input);
+#else
+            std::ignore = p_macos_param;
+            LogError << "MacOS controller is only supported on macOS";
+            return nullptr;
+#endif
+        }
+        if (const auto* p_wlroots_param = std::get_if<RuntimeParam::WlRootsParam>(&controller_param)) {
+#if defined(__linux__)
+            return MaaWlRootsControllerCreate(p_wlroots_param->wlr_socket_path.c_str());
+#else
+            std::ignore = p_wlroots_param;
+            LogError << "WlRoots controller is only supported on Linux";
+            return nullptr;
+#endif
+        }
+
+        LogError << "Unknown controller type";
+        return nullptr;
+    };
+
+    for (const auto& [name, controller_param] : param.controllers) {
+        auto* controller_handle = create_controller(controller_param);
+        if (!controller_handle) {
+            LogError << "Failed to create controller" << VAR(name);
+            return false;
+        }
+        controller_handles.emplace(name, controller_handle);
+    }
 
     // 设置分辨率选项
     if (param.display_config.raw) {
         MaaBool raw = true;
-        MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotUseRawSize, &raw, sizeof(raw));
+        for (auto& [name, controller_handle] : controller_handles) {
+            std::ignore = name;
+            MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotUseRawSize, &raw, sizeof(raw));
+        }
     }
     else if (param.display_config.long_side.has_value()) {
         int long_side = param.display_config.long_side.value();
-        MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetLongSide, &long_side, sizeof(long_side));
+        for (auto& [name, controller_handle] : controller_handles) {
+            std::ignore = name;
+            MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetLongSide, &long_side, sizeof(long_side));
+        }
     }
     else if (param.display_config.short_side.has_value()) {
         int short_side = param.display_config.short_side.value();
-        MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetShortSide, &short_side, sizeof(short_side));
+        for (auto& [name, controller_handle] : controller_handles) {
+            std::ignore = name;
+            MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetShortSide, &short_side, sizeof(short_side));
+        }
     }
     // 如果都没设置，使用默认值 720
     else {
         int short_side = 720;
-        MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetShortSide, &short_side, sizeof(short_side));
+        for (auto& [name, controller_handle] : controller_handles) {
+            std::ignore = name;
+            MaaControllerSetOption(controller_handle, MaaCtrlOption_ScreenshotTargetShortSide, &short_side, sizeof(short_side));
+        }
     }
 
-    MaaId cid = controller_handle->post_connection();
+    std::unordered_map<std::string, MaaId> controller_connect_ids;
+    for (auto& [name, controller_handle] : controller_handles) {
+        controller_connect_ids.emplace(name, controller_handle->post_connection());
+        tasker_handle->bind_controller(name, controller_handle);
+    }
+    if (!param.default_controller.empty()) {
+        tasker_handle->set_default_controller(param.default_controller);
+    }
     MaaId rid = 0;
     for (const auto& path : param.resource_path) {
         rid = resource_handle->post_bundle(path);
     }
 
-    tasker_handle->bind_controller(controller_handle);
     tasker_handle->bind_resource(resource_handle);
 
-    if (MaaStatus_Failed == controller_handle->wait(cid)) {
-        LogError << "Failed to connect controller";
-        return false;
+    for (auto& [name, controller_handle] : controller_handles) {
+        if (MaaStatus_Failed == controller_handle->wait(controller_connect_ids.at(name))) {
+            LogError << "Failed to connect controller" << VAR(name);
+            return false;
+        }
     }
 
     if (MaaStatus_Failed == resource_handle->wait(rid)) {
@@ -208,6 +243,10 @@ bool Runner::run(const RuntimeParam& param)
 
     MaaId tid = 0;
     for (const auto& task : param.task) {
+        if (!task.default_controller.empty() && !tasker_handle->set_default_controller(task.default_controller)) {
+            LogError << "Failed to set task default controller" << VAR(task.default_controller) << VAR(task.name);
+            return false;
+        }
         tid = tasker_handle->post_task(task.entry, task.pipeline_override);
     }
 

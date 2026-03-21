@@ -51,6 +51,7 @@ private:
     bool handle_context_clone(const json::value& j);
     bool handle_context_task_id(const json::value& j);
     bool handle_context_tasker(const json::value& j);
+    bool handle_context_current_controller_name(const json::value& j);
     bool handle_context_set_anchor(const json::value& j);
     bool handle_context_get_anchor(const json::value& j);
     bool handle_context_get_hit_count(const json::value& j);
@@ -68,6 +69,8 @@ private:
     bool handle_tasker_stopping(const json::value& j);
     bool handle_tasker_resource(const json::value& j);
     bool handle_tasker_controller(const json::value& j);
+    bool handle_tasker_named_controller(const json::value& j);
+    bool handle_tasker_default_controller_name(const json::value& j);
     bool handle_tasker_clear_cache(const json::value& j);
     bool handle_tasker_override_pipeline(const json::value& j);
     bool handle_tasker_get_task_detail(const json::value& j);

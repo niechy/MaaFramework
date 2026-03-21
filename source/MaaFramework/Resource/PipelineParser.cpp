@@ -225,6 +225,11 @@ bool PipelineParser::parse_node(
         return false;
     }
 
+    if (!get_and_check_value(input, "controller", data.controller, default_value.controller)) {
+        LogError << "failed to get_and_check_value controller" << VAR(input);
+        return false;
+    }
+
     if (!get_multi_keys_and_check_value(input, { "enable", "enabled" }, data.enabled, default_value.enabled)) {
         LogError << "failed to get_and_check_value enable" << VAR(input);
         return false;

@@ -19,6 +19,8 @@ public:
 
     virtual bool bind_resource(MaaResource* resource) override;
     virtual bool bind_controller(MaaController* controller) override;
+    virtual bool bind_controller(const std::string& name, MaaController* controller) override;
+    virtual bool set_default_controller(const std::string& name) override;
     virtual bool inited() const override;
 
     virtual bool set_option(MaaTaskerOption key, MaaOptionValue value, MaaOptionValueSize val_size) override;
@@ -40,6 +42,8 @@ public:
 
     virtual MaaResource* resource() const override;
     virtual MaaController* controller() const override;
+    virtual MaaController* controller(const std::string& name) const override;
+    virtual std::string default_controller_name() const override;
 
     virtual void clear_cache() override;
     virtual std::optional<MAA_TASK_NS::TaskDetail> get_task_detail(MaaTaskId task_id) const override;

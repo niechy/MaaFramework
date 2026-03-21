@@ -64,6 +64,7 @@ class Tasker:
         # avoid gc
         self._resource_holder = resource
         self._controller_holder = controller
+        self._named_controller_holders = {"__default__": controller}
 
         return bool(
             Library.framework().MaaTaskerBindResource(self._handle, resource._handle)
@@ -103,6 +104,44 @@ class Tasker:
         if not controller_handle:
             raise RuntimeError("Failed to get controller.")
 
+        return Controller(handle=controller_handle)
+
+    @property
+    def default_controller_name(self) -> str:
+        """获取默认控制器名称 / Get default controller name"""
+        string_buffer = StringBuffer()
+        if not Library.framework().MaaTaskerGetDefaultControllerName(
+            self._handle, string_buffer._handle
+        ):
+            raise RuntimeError("Failed to get default controller name.")
+        return string_buffer.get()
+
+    def bind_named_controller(self, name: str, controller: Controller) -> bool:
+        """绑定命名控制器 / Bind named controller"""
+        if not hasattr(self, "_named_controller_holders"):
+            self._named_controller_holders = {}
+        self._named_controller_holders[name] = controller
+        return bool(
+            Library.framework().MaaTaskerBindNamedController(
+                self._handle, name.encode(), controller._handle
+            )
+        )
+
+    def set_default_controller(self, name: str) -> bool:
+        """设置默认控制器 / Set default controller"""
+        return bool(
+            Library.framework().MaaTaskerSetDefaultController(
+                self._handle, name.encode()
+            )
+        )
+
+    def get_controller(self, name: str) -> Optional[Controller]:
+        """按名称获取控制器 / Get controller by name"""
+        controller_handle = Library.framework().MaaTaskerGetNamedController(
+            self._handle, name.encode()
+        )
+        if not controller_handle:
+            return None
         return Controller(handle=controller_handle)
 
     @property
@@ -846,6 +885,19 @@ class Tasker:
             MaaControllerHandle,
         ]
 
+        Library.framework().MaaTaskerBindNamedController.restype = MaaBool
+        Library.framework().MaaTaskerBindNamedController.argtypes = [
+            MaaTaskerHandle,
+            ctypes.c_char_p,
+            MaaControllerHandle,
+        ]
+
+        Library.framework().MaaTaskerSetDefaultController.restype = MaaBool
+        Library.framework().MaaTaskerSetDefaultController.argtypes = [
+            MaaTaskerHandle,
+            ctypes.c_char_p,
+        ]
+
         Library.framework().MaaTaskerInited.restype = MaaBool
         Library.framework().MaaTaskerInited.argtypes = [MaaTaskerHandle]
 
@@ -899,6 +951,18 @@ class Tasker:
 
         Library.framework().MaaTaskerGetController.restype = MaaControllerHandle
         Library.framework().MaaTaskerGetController.argtypes = [MaaTaskerHandle]
+
+        Library.framework().MaaTaskerGetNamedController.restype = MaaControllerHandle
+        Library.framework().MaaTaskerGetNamedController.argtypes = [
+            MaaTaskerHandle,
+            ctypes.c_char_p,
+        ]
+
+        Library.framework().MaaTaskerGetDefaultControllerName.restype = MaaBool
+        Library.framework().MaaTaskerGetDefaultControllerName.argtypes = [
+            MaaTaskerHandle,
+            MaaStringBufferHandle,
+        ]
 
         Library.framework().MaaTaskerGetRecognitionDetail.restype = MaaBool
         Library.framework().MaaTaskerGetRecognitionDetail.argtypes = [

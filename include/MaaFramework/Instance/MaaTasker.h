@@ -47,6 +47,8 @@ extern "C"
     MAA_FRAMEWORK_API MaaBool MaaTaskerBindResource(MaaTasker* tasker, MaaResource* res);
 
     MAA_FRAMEWORK_API MaaBool MaaTaskerBindController(MaaTasker* tasker, MaaController* ctrl);
+    MAA_FRAMEWORK_API MaaBool MaaTaskerBindNamedController(MaaTasker* tasker, const char* name, MaaController* ctrl);
+    MAA_FRAMEWORK_API MaaBool MaaTaskerSetDefaultController(MaaTasker* tasker, const char* name);
 
     MAA_FRAMEWORK_API MaaBool MaaTaskerInited(const MaaTasker* tasker);
 
@@ -85,6 +87,8 @@ extern "C"
     MAA_FRAMEWORK_API MaaResource* MaaTaskerGetResource(const MaaTasker* tasker);
 
     MAA_FRAMEWORK_API MaaController* MaaTaskerGetController(const MaaTasker* tasker);
+    MAA_FRAMEWORK_API MaaController* MaaTaskerGetNamedController(const MaaTasker* tasker, const char* name);
+    MAA_FRAMEWORK_API MaaBool MaaTaskerGetDefaultControllerName(const MaaTasker* tasker, /* out */ MaaStringBuffer* buffer);
 
     MAA_FRAMEWORK_API MaaBool MaaTaskerClearCache(MaaTasker* tasker);
 

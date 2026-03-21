@@ -56,21 +56,80 @@ bool Tasker::bind_controller(MaaController* controller)
 {
     auto* derived = dynamic_cast<MAA_CTRL_NS::ControllerAgent*>(controller);
 
-    LogInfo << VAR_VOIDP(this) << VAR_VOIDP(controller) << VAR_VOIDP(derived) << VAR_VOIDP(controller_);
+    LogInfo << VAR_VOIDP(this) << VAR_VOIDP(controller) << VAR_VOIDP(derived);
 
     if (controller && !derived) {
         LogError << "Invalid controller";
         return false;
     }
 
-    controller_ = derived;
+    controllers_.clear();
+    default_controller_name_.clear();
+
+    if (!derived) {
+        return true;
+    }
+
+    default_controller_name_ = "__default__";
+    controllers_.emplace(default_controller_name_, derived);
+    return true;
+}
+
+bool Tasker::bind_controller(const std::string& name, MaaController* controller)
+{
+    auto* derived = dynamic_cast<MAA_CTRL_NS::ControllerAgent*>(controller);
+
+    LogInfo << VAR_VOIDP(this) << VAR(name) << VAR_VOIDP(controller) << VAR_VOIDP(derived);
+
+    if (name.empty()) {
+        LogError << "name is empty";
+        return false;
+    }
+    if (!derived) {
+        LogError << "Invalid controller";
+        return false;
+    }
+
+    controllers_.insert_or_assign(name, derived);
+    if (default_controller_name_.empty()) {
+        default_controller_name_ = name;
+    }
+    return true;
+}
+
+bool Tasker::set_default_controller(const std::string& name)
+{
+    LogInfo << VAR(name);
+
+    if (name.empty()) {
+        default_controller_name_.clear();
+        return true;
+    }
+
+    if (!controllers_.contains(name)) {
+        LogError << "default controller not found" << VAR(name);
+        return false;
+    }
+
+    default_controller_name_ = name;
     return true;
 }
 
 bool Tasker::inited() const
 {
     // 要求 resource 有效；controller 是可选的，但如果已绑定则必须处于连接状态
-    return resource_ && resource_->valid() && (!controller_ || controller_->connected());
+    if (!resource_ || !resource_->valid()) {
+        return false;
+    }
+
+    for (const auto& [name, controller] : controllers_) {
+        std::ignore = name;
+        if (controller && !controller->connected()) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool Tasker::set_option(MaaTaskerOption key, MaaOptionValue value, MaaOptionValueSize val_size)
@@ -175,8 +234,11 @@ MaaTaskId Tasker::post_stop()
     if (resource_) {
         resource_->post_stop();
     }
-    if (controller_) {
-        controller_->post_stop();
+    for (const auto& [name, controller] : controllers_) {
+        std::ignore = name;
+        if (controller) {
+            controller->post_stop();
+        }
     }
 
     static const std::string kStopEntry = "MaaTaskerPostStop";
@@ -196,7 +258,23 @@ MAA_RES_NS::ResourceMgr* Tasker::resource() const
 
 MAA_CTRL_NS::ControllerAgent* Tasker::controller() const
 {
-    return controller_;
+    if (default_controller_name_.empty()) {
+        return nullptr;
+    }
+
+    auto iter = controllers_.find(default_controller_name_);
+    return iter == controllers_.end() ? nullptr : iter->second;
+}
+
+MAA_CTRL_NS::ControllerAgent* Tasker::controller(const std::string& name) const
+{
+    auto iter = controllers_.find(name);
+    return iter == controllers_.end() ? nullptr : iter->second;
+}
+
+std::string Tasker::default_controller_name() const
+{
+    return default_controller_name_;
 }
 
 void Tasker::clear_cache()
@@ -332,7 +410,7 @@ bool Tasker::run_task(RunnerId runner_id, TaskPtr task_ptr)
         { "task_id", task_id },
         { "entry", entry },
         { "hash", resource_ ? resource_->get_hash() : std::string() },
-        { "uuid", controller_ ? controller_->get_uuid() : std::string() },
+        { "uuid", controller() ? controller()->get_uuid() : std::string() },
     };
 
     LogInfo << "task start:" << VAR(cb_detail);
@@ -356,8 +434,8 @@ bool Tasker::run_task(RunnerId runner_id, TaskPtr task_ptr)
     }
     notifier_.notify(this, ret ? MaaMsg_Tasker_Task_Succeeded : MaaMsg_Tasker_Task_Failed, cb_detail);
 
-    if (controller_ && !task_runner_->pending()) {
-        controller_->wait(controller_->post_inactive());
+    if (auto* default_controller = controller(); default_controller && !task_runner_->pending()) {
+        default_controller->wait(default_controller->post_inactive());
     }
 
     return ret;
